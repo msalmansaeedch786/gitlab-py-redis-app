@@ -1,0 +1,40 @@
+image:
+  name: docker/compose
+  entrypoint: [""]
+
+services:
+  - docker:dind
+
+variables:
+  
+
+stages:
+  - test
+  - deploy
+
+before_script:
+  - apk add --no-cache openssh-client bash
+  - apk add python3
+
+test:
+  stage: test
+  script:
+    - echo 'test stage'
+    - python3 ./src/tests/test.py
+
+deploy:
+  stage: deploy 
+  script:
+    - mkdir -p ~/.ssh
+    - echo "$PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - cat ~/.ssh/id_rsa
+    - chmod 700 ~/.ssh/id_rsa
+    - eval "$(ssh-agent -s)"
+    - ssh-add ~/.ssh/id_rsa
+    - ssh-keyscan -H 'gitlab.com' >> ~/.ssh/known_hosts
+    - chmod +x ./deploy.sh
+    - export server_ip=$(sed -n "s/^$CI_COMMIT_REF_NAME=//p" "./servers.config")
+    - echo $server_ip
+    - ssh -o StrictHostKeyChecking=no ubuntu@$server_ip mkdir -p app
+    - scp -o StrictHostKeyChecking=no -r ./environments/$CI_COMMIT_REF_NAME.env ./.env-ci ./docker-compose.yml ubuntu@$server_ip:/home/ubuntu/app
+    - bash ./deploy.sh
