@@ -5,9 +5,6 @@ image:
 services:
   - docker:dind
 
-variables:
-  
-
 stages:
   - test
   - deploy
@@ -32,9 +29,12 @@ deploy:
     - eval "$(ssh-agent -s)"
     - ssh-add ~/.ssh/id_rsa
     - ssh-keyscan -H 'gitlab.com' >> ~/.ssh/known_hosts
-    - chmod +x ./deploy.sh
+
     - export server_ip=$(sed -n "s/^$CI_COMMIT_REF_NAME=//p" "./servers.config")
     - echo $server_ip
     - ssh -o StrictHostKeyChecking=no ubuntu@$server_ip mkdir -p app
-    - scp -o StrictHostKeyChecking=no -r ./environments/$CI_COMMIT_REF_NAME.env ./.env-ci ./docker-compose.yml ubuntu@$server_ip:/home/ubuntu/app
+    
+    - chmod +x ./deploy.sh
+    - chmod +x ./ubuntu_install.sh
+    - bash ./ubuntu_install.sh
     - bash ./deploy.sh

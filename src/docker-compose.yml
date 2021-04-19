@@ -6,6 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile
       target: dev
+    env_file:
+      - ./environments/dev.env
     ports:
       - "8000:8000"
     image: tornado
